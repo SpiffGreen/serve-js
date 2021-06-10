@@ -1,0 +1,28 @@
+{
+  "name": "serve-js",
+  "version": "0.0.0",
+  "description": "Serve-JS is a JavaScript server-side framework for building server-rendered user interfaces",
+  "main": "serve-js.js",
+  "scripts": {
+    "start": "node serve-js.js"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/SpiffGreen/serve-js.git"
+  },
+  "keywords": [
+    "server",
+    "nodejs",
+    "html",
+    "fullstack",
+    "backend",
+    "serving",
+    "files"
+  ],
+  "author": "Spiff Jekey-Green",
+  "license": "MIT",
+  "bugs": {
+    "url": "https://github.com/SpiffGreen/serve-js/issues"
+  },
+  "homepage": "https://github.com/SpiffGreen/serve-js#readme"
+}
