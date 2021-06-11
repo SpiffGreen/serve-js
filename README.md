@@ -15,7 +15,7 @@
 Serve-JS was inspired By [@midnqp's Frameworkless](https://github.com/midnqp/frameworkless)
 * __Its easy to write__: Any who knows simple html and css is good to go, except for writing the server side logic if required means one should have knowledge of nodejs.
 * __Node in HTML__: Allows you write nodejs code inside html
-* __Routing__: It performs the routing for you. So no need to worry about url paths, except you need to customize the endpoints.
+* __Routing__: It intelligently performs the routing for you. So no need to worry about url paths, except you need to customize the endpoints. As a plus, you don't have to include .html at the end of URLs requesting HTML files.
 
 ## Features
 * __Resuable Components__: You could build encapsulated components that manage their own logic and state. This could be used to build even more complex UIs.

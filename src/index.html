@@ -4,33 +4,33 @@
     <meta charset="UTF-8">
     <meta http-equiv="X-UA-Compatible" content="IE=edge">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Document</title>
+    <meta name="description" content="Web site created using serve-js   ">
+    <title>Made With Serve-JS</title>
     <link rel="shortcut icon" href="favicon.ico" type="image/x-icon">
-    <link rel="stylesheet" href="style.css">
+    <link rel="stylesheet" href="./css/style.css">
+    <link rel="stylesheet" href="./css/about.css">
+
 </head>
 <body>
-    <script nodejs>
-        return include("/components/navbar");
-    </script>
-    <div>
-        Hello world it's Serve-JS
-        <a href="https://github.com/SpiffGreen/serve-js">Github - Serve-JS</a>
+    <div class="app">
+        <script nodejs>
+            return `<h2 class="greeting">Welcom To Serve-JS</h2>`;
+        </script>
+
+        <img class="logo" src="./logo.svg" alt="logo" width="300" height="300">
         <script>console.log("Hello world from the client");</script>
         
         <script nodejs>
-            console.log("Requested the index.html page");
-            return "<h2>Returned from nodejs</h2>";
+            return `<p class="portInfo">App's running on PORT ${process.env.PORT}</p>`;
         </script>
-
-        <script nodejs>
-            console.log('Hi dear, I am still from Serve-JS');
-            return `<p>Your ip address is ${req.remoteAddress}</p>`;
-        </script>
+        <a target="_blank" href="https://github.com/SpiffGreen/serve-js">Github - Serve-JS</a>
+        <p>Let's Build | <a href="/about">Get Started</a></p>
 
         <script nodejs>
             return include("/components/footer");
         </script>
     </div>
     
+    <script src="./js/app.js"></script>
 </body>
 </html>
