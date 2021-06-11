@@ -23,7 +23,7 @@ Serve-JS was inspired By [@midnqp's Frameworkless](https://github.com/midnqp/fra
 
 ## Installation
 ```bash
-npm i https://github.com/SpiffGreen/serve-js
+git clone https://github.com/SpiffGreen/serve-js.git
 #or
 npm install SpiffGreen/serve-js
 ```
