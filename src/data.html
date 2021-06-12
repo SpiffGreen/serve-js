@@ -1,0 +1,15 @@
+<script nodejs>
+    
+    res.writeHead(200, "OK", {
+    "Content-Type":  "application/json"
+    });
+
+    if(req.method.toUpperCase() === "GET") {
+        return JSON.stringify([{ name: "John Doe" }, { name: "Spiff Green" }]);
+    } else {
+        return JSON.stringify({
+            message: "Message Received",
+            data: req.body
+        });
+    }
+</script>

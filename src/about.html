@@ -5,23 +5,20 @@
     <meta http-equiv="X-UA-Compatible" content="IE=edge">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Document</title>
-    <link rel="stylesheet" href="style.css">
+    <link rel="stylesheet" href="./css/style.css">
+    <link rel="stylesheet" href="./css/about.css">
 </head>
 <body>
-    <script nodejs>
-        return include("./components/navbar");
-    </script>
-    <h2>This is the about page</h2>
-    <a href="/index">Home page</a>
-    <script nodejs>
-        console.log("Requested the about page");
-    </script>
+    <div class="app">
+        <h2 class="greeting">Get Started</h2>
+        <a href="/">Home page</a>
 
-    <script>
-        console.log("Welcome to About");
-    </script>
-    <script nodejs>
-        return include("./components/footer.html");
-    </script>
+        <script>
+            console.log("Welcome to About");
+        </script>
+        <script nodejs>
+            return include("./components/footer.html");
+        </script>
+    </div>
 </body>
 </html>
