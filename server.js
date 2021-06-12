@@ -1,13 +1,28 @@
 const http = require("http");
 const servejs= require("./serve-js");
 const PORT = process.env.PORT || 4000;
-process.env.PORT = PORT;
 
-// console.log(servejs);
+// Servejs Config
+servejs.setLogger(true);
+servejs.setStatic("View");
 
-function handler(req, res) {
-    servejs.route(req, res);
-}
+// Routes
+servejs.get("/", (req, res) => {
+    res.render(req, res, "View/index.html");
+});
 
-http.createServer(handler)
-    .listen(PORT, () => console.info(`Server started on port ${PORT}`));
+servejs.post("/api", (req, res) => {
+    res.end(String(req.body));
+});
+
+servejs.delete("/api/todo", (req, res) => {
+    // Logic to delete stuff
+});
+
+servejs.put("/api/todo", (req, res) => {
+    // Update stuff
+});
+
+http
+    .createServer((req, res) => servejs.route(req, res))
+    .listen(PORT, () => console.info(`Serving HTTP on port ${PORT} : (http://[::]:${PORT}/)...`));
