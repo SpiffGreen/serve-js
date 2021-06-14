@@ -1,4 +1,4 @@
-const servejs= require("./serve-js");
+/* const servejs= require("./serve-js");
 const PORT = process.env.PORT || 4000;
 const http = require("http");
 
@@ -41,4 +41,6 @@ servejs.post("/api", (req, res) => {
 
 http
     .createServer(servejs.route)
-    .listen(PORT, () => console.dir(`Serving HTTP on port ${PORT} : (http://[::]:${PORT}/)...`));
+    .listen(PORT, () => console.dir(`Serving HTTP on port ${PORT} : (http://[::]:${PORT}/)...`)); */
+
+require("./serve-js").setLogger(true).setView("Public").listen(3000, () => console.dir(`Serving HTTP on port ${3000} : (http://[::]:${3000}/)...`));

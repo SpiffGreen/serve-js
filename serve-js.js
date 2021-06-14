@@ -98,12 +98,16 @@ class Servejs {
     json() {
         return (req, res) => {
             res.setHeader("Content-Type", "application/json");
-            try {
-                let cont = JSON.parse(req.body);
-                req.body = cont;
-            } catch (err) {
-                // req.body = null;
-            }
+            // Handling POST data - req.body
+            req.on("data", chunk => {
+                try {
+                    this.buffer = JSON.parse(chunk.toString());
+                } catch (err) {
+                    console.log("Data is not valid json");
+                    this.buffer = null;
+                }
+            });
+            
         }
     }
 
@@ -113,7 +117,10 @@ class Servejs {
      */
     text() {
         return (req, res) => {
-
+            // Handling POST data - req.body
+            req.on("data", chunk => {
+                this.buffer ? buffer += chunk : this.buffer = "" + chunk;
+            });
         }
     }
 
@@ -123,7 +130,7 @@ class Servejs {
      */
     urlencoded() {
         return (req, res) => {
-
+            // To be done later, Study urlencoded values for server side manipulation
         }
     }
 
@@ -133,7 +140,7 @@ class Servejs {
      */
     raw() {
         return (req, res) => {
-
+            // To be done later, Study how to concatenate chunked node.js(buffer) values
         }
     }
 
@@ -236,10 +243,12 @@ class Servejs {
 
     setStatic(folderPath) {
         this.STATIC_FOLDER = folderPath || this.STATIC_FOLDER;
+        return this;
     }
 
     use(cb) {
         Array.isArray(this.useCbs)  ? this.useCbs.push(cb) : this.useCbs = Array(cb);
+        return this;
     }
 
     /**
@@ -365,17 +374,13 @@ class Servejs {
             res.render = this.render;
             res.send = this.send;
 
-            // Handling POST data - req.body
-            let buffer = "";
-            req.on("data", chunk => {
-                console.log("Chunk: ", chunk.__proto__);
-                buffer += chunk;
-            });
-            req.on("end", () => {
-                req.body = buffer;
+            // let buffer = "";
 
-                // Execute Middlewares passed to this.use.
-                Array.isArray(this.useCbs) ? this.useCbs.forEach(i => i(req, res)) : null;
+            // Execute Middlewares passed to this.use.
+            Array.isArray(this.useCbs) ? this.useCbs.forEach(i => i(req, res)) : null;
+            
+            req.on("end", () => {
+                req.body = this.buffer;
 
                 switch(req.method) {
                     case "GET":
@@ -464,6 +469,7 @@ class Servejs {
      */
     setView(folderName = "src") {
         this.SRC_FOLDER = folderName;
+        return this;
     }
 
     /**
@@ -472,6 +478,7 @@ class Servejs {
      */
     setLogger(b = true) {
         this.logger = b;
+        return this;
     }
 
     /**
