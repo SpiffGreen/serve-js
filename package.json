@@ -24,5 +24,8 @@
   "bugs": {
     "url": "https://github.com/SpiffGreen/serve-js/issues"
   },
-  "homepage": "https://github.com/SpiffGreen/serve-js#readme"
+  "homepage": "https://github.com/SpiffGreen/serve-js#readme",
+  "dependencies": {
+    "express": "^4.17.1"
+  }
 }
