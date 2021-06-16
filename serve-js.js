@@ -11,8 +11,6 @@
 
 /**
  * @todo Implement cors method (incomplete)
- * @todo Implement functions that specify data format to be recieved default is string(incomplete) 
- * @todo The send method should be able to detect if its value contains html and send the appropriate headers.
  */
 
 const path = require("path");

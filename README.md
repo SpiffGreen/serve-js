@@ -18,18 +18,18 @@ Serve-JS is an implementation of [midnqp/frameworkless](https://github.com/midnq
 * __Routing__: It intelligently performs the routing for you. So no need to worry about url paths, except you need to customize the endpoints. As a plus, you don't have to include .html at the end of URLs requesting HTML files.
 * __Usable for both http and https__: Whether its http
 
-## Features
+## ✨ Features
 * __Resuable Components__: You could build encapsulated components that manage their own logic and state. This could be used to build even more complex UIs.
 * __Middlewares__: For more controlled routing logic e.g req.body's data validation.
-* __Routing__: Serve-JS does automatic routing for you even without you writing server code.
+* __Routing__: Serve-JS does automatic routing for you even without you writing server code. It also supports dynamic routes.
 
-## Installation
+## 📦 Installation
 
 ```sh
 $ npm install serve
 ```
 
-## Examples
+## 🚀 Examples
 
 ### Basic ServeJS server
 This example demonstrates the use of ServeJS for serving files from a folder.
@@ -64,7 +64,7 @@ This methods are used to assign function handlers to specific routes. Whenever t
 #### `ServeJS.prototype.put()` - For put requests.
 #### `ServeJS.prototype.options()` - Adds endpoints for PUT requests.
 
-## Methods
+## ▶️ Methods
 ### `route`
 This method handles the whole routing process. It's passed as argument to http/https createServer methods.
 ### `setView`
@@ -91,20 +91,20 @@ This serve middleware returns `req.body` as a string.
 ### `urlencoded`
 This middleware will return the values of a request in url encoded form.
 
-## Documentation
+## 📕 Documentation
 Not available yet: [https://spiffgreen.github.io/serve-js](https://spiffgreen.github.io/serve-js)
 
 ## Issues
 You have suggestions? or something you wish is added to the framework to make users experience better? We have a working [issue tracker](https://github.com/SpiffGreen/serve-js/issues) to meet the request of many. Please note that if an issue does not conform to the standard of Serve-JS it will be closed immediately.
 
-## Contributing Guide
+## ✍️ Contributing Guide
 Please read the [Contributing.md](./CONTRIBUTING.md) file for guidelines to contribute to this project.
 
-## License
+## 📜 License
 Serve-JS is [MIT licensed](./LICENSE)
 
 Copyright 2021 Spiff Jekey-Green <spiffjekeygreen@gmail.com>
 
 Copyright 2021 Muhammad Bin Zafar <midnightquantumprogrammer@gmail.com>
 
-<p align="center">Made with in Nigeria</p>
+<p align="center">Made ❤️ with in Nigeria 🇳🇬</p>
