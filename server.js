@@ -43,4 +43,11 @@ http
     .createServer(servejs.route)
     .listen(PORT, () => console.dir(`Serving HTTP on port ${PORT} : (http://[::]:${PORT}/)...`)); */
 
-require("./serve-js").setLogger(true).setView("Public").listen(3000, () => console.dir(`Serving HTTP on port ${3000} : (http://[::]:${3000}/)...`));
+const serveJs = require("./serve-js");
+
+serveJs
+    .setLogger(true)
+    .get("/", (req, res) => console.dir("This is a Middleware"), (req, res) => res.send(res, {"name": "Spiff"}))
+    .get("/home", (req, res) => res.send(res, "<H2 align='center'>This is the home</H2>"))
+    .post("/api", (req, res) => res.send(res, {body: req.body, message: "Recieved"}))
+    .listen();

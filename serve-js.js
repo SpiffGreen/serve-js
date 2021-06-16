@@ -1,18 +1,18 @@
 /**
- * @author  Spiff Jekey-Green <spiffjekeygreen@gmail.com>
+ * @author  Spiff Jekey-Green <spiffjekeygreen@gmail.com>, Muhammed <midnightquatumprogrammer@gmail.com>
  * @name    Serve-js
  * @description Serve-JS is a JavaScript server-side framework for building server-rendered user interfaces
  * @version v0.0.0
  * @see     https://github.com/SpiffGreen/serve-js
+ * Copyright(c) 2021 Spiff Jekey-Green <spiffjekeygreen@gmail.com>
+ * Copyright(c) 2021 Muhammed <midnightquatumprogrammer@gmail.com>
  * @license MIT Licensed
- * Copyright(c) 2021 Spiff Jekey-Green
  */
 
 /**
  * @todo Implement cors method (incomplete)
  * @todo Implement functions that specify data format to be recieved default is string(incomplete) 
  * @todo Implement req.params object for dynamic routes.
- * @todo Implement Middleware functionality for all request methods to use (incomplete)
  * @todo The send method should be able to detect if its value contains html and send the appropriate headers.
  */
 
@@ -30,6 +30,11 @@ function sanitize(text) {
     text = text.replace(/</g, "&lt;"); 
     text = text.replace(/>/g, "&gt;");
     return text;
+}
+
+function containsHTML(text) {
+    const reg = /<b[^<]*?>|<i[^<]*?>|<div[^<]*?>|<span[^<]*?>|<h[1-6][^<]*?>|<p[^<]*?>|<em[^<]*?>/i;
+    return reg.test(text);
 }
 
 function fileExists(filePath) {
@@ -55,17 +60,17 @@ class Servejs {
         this.post_routes = Object.create(null);
         this.delete_routes = Object.create(null);
         this.put_routes = Object.create(null);
-        this.option_routes = Object.create(null);
+        this.options_routes = Object.create(null);
         this.get_any = null;
         this.post_any = null;
         this.delete_any = null;
         this.put_any = null;
-        this.option_any = null;
+        this.options_any = null;
         this.buffer = null; // For storing data
-        // this.useCbs = Array(); // Disabled: Ussed dependency injection
+        // this.useCbs = Array(); // Disabled: Used dependency injection
 
         // Utilities
-        this.Mimeof = this.Mimeof.bind(this);
+        // this.Mimeof = this.Mimeof.bind(this);
         this.send404 = this.send404.bind(this);
         this.sendFile = this.sendFile.bind(this);
         this.include = this.include.bind(this);
@@ -100,10 +105,11 @@ class Servejs {
             res.setHeader("Content-Type", "application/json");
             // Handling POST data - req.body
             req.on("data", chunk => {
+                console.log(chunk);
                 try {
                     this.buffer = JSON.parse(chunk.toString());
+                    req.body = this.buffer;
                 } catch (err) {
-                    console.log("Data is not valid json");
                     this.buffer = null;
                 }
             });
@@ -236,9 +242,9 @@ class Servejs {
     }
 
     listen(port, cb) {
-        http
-            .createServer((req, res) => this.route(req, res))
-            .listen(port || process.env.PORT || this.DEFAULT_PORT, () => cb && cb());
+        return http
+                .createServer((req, res) => this.route(req, res))
+                .listen(port || process.env.PORT || this.DEFAULT_PORT, () => cb && cb());
     }
 
     setStatic(folderPath) {
@@ -268,7 +274,7 @@ class Servejs {
         req.path = URL.split("?")[0];
 
         // Set Powered By
-        res.setHeader('X-Powered-By', 'Serve');
+        res.setHeader('X-Powered-By', 'ServeJS');
 
         // Adding query data for easy use
         let queries = req.url.split("?")[1];
@@ -384,10 +390,31 @@ class Servejs {
 
                 switch(req.method) {
                     case "GET":
-                        this.get_any ? this.get_any(req, res) : this.get_routes[urlPath] ? this.get_routes[urlPath](req, res) : fileExists(path.join(__dirname, this.STATIC_FOLDER, urlPath)) ?  this.sendFile(req, res, path.join(__dirname, this.STATIC_FOLDER, urlPath)) : this.send404(req, res);
+                        if(this.get_any) {
+                            this.get_any.middleware && this.get_any.middleware(req, res);
+                            this.get_any(req, res);
+                        } else {
+                            if(this.get_routes[urlPath]) {
+                                this.get_routes[urlPath].middleware && this.get_routes[urlPath].middleware(req, res);
+                                this.get_routes[urlPath](req, res)
+                             } else {
+                                 fileExists(path.join(__dirname, this.STATIC_FOLDER, urlPath)) ?  this.sendFile(req, res, path.join(__dirname, this.STATIC_FOLDER, urlPath)) : this.send404(req, res);
+                             }
+                        }
                         break;
                     case "POST":
-                        this.post_any ? this.post_any(req, res) : this.post_routes[urlPath] ? this.post_routes[urlPath](req, res) : this.send404(req, res);
+                        // this.post_any ? this.post_any(req, res) : this.post_routes[urlPath] ? this.post_routes[urlPath](req, res) : this.send404(req, res);
+                        if(this.post_any) {
+                            this.post_any.middleware && this.post_any.middleware(req, res);
+                            this.post_any(req, res);
+                        } else {
+                            if(this.post_routes[urlPath]) {
+                                this.post_routes[urlPath].middleware && this.post_routes[urlPath].middleware(req, res);
+                                this.post_routes[urlPath](req, res)
+                             } else {
+                                 this.send404(req, res);
+                             }
+                        }
                         break;
                     case "DELETE":
                         this.delete_any ? this.delete_any(req, res) : this.delete_routes[urlPath] ? this.delete_routes[urlPath](req, res) : this.send404(req, res);
@@ -396,7 +423,7 @@ class Servejs {
                         this.put_any ? this.put_any(req, res) : this.put_routes[urlPath] ? this.put_routes[urlPath](req, res) : this.send404(req, res);
                         break;
                     case "OPTIONS":
-                        this.option_any ? this.option_any(req, res) : this.option_routes[urlPath] ? this.put_routes[urlPath](req, res) : this.send404(req, res);
+                        this.options_any ? this.options_any(req, res) : this.options_routes[urlPath] ? this.options_routes[urlPath](req, res) : this.send404(req, res);
                         break;
                     default:
                         res.end("UNKNOWN METHOD");
@@ -425,7 +452,7 @@ class Servejs {
             }
         } else if(type === "string" || type === "number") {
             res.writeHead(200, "OK", {
-                "Content-Type": "text/plains"
+                "Content-Type": containsHTML(respObject) ? "text/html" : "text/plain"
             });
             res.write(respObject);
             res.end();
@@ -488,7 +515,18 @@ class Servejs {
      */
     get(appPath, handler) {
         this.customRouting = true;
+        if(arguments.length > 2) {
+            if(appPath !== "*") {
+                this.get_routes[appPath] = arguments[2];
+                this.get_routes[appPath].middleware = handler;
+            } else {
+                this.get_any.middleware = handler;
+                this.get_any = arguments[2];
+            }
+            return this;
+        }
         appPath !== "*" ? this.get_routes[appPath] = handler : this.get_any = handler;
+        return this;
     }
 
     /**
@@ -498,7 +536,18 @@ class Servejs {
      */
     post(appPath, handler) {
         this.customRouting = true;
+        if(arguments.length > 2) {
+            if(appPath !== "*") {
+                this.post_routes[appPath] = arguments[2];
+                this.post_routes[appPath].middleware = handler;
+            } else {
+                this.post_any.middleware = handler;
+                this.post_any = arguments[2];
+            }
+            return this;
+        }
         appPath !== "*" ? this.post_routes[appPath] = handler : this.post_any = handler;
+        return this;
     }
 
     /**
@@ -508,7 +557,18 @@ class Servejs {
      */
     delete(appPath, handler) {
         this.customRouting = true;
+        if(arguments.length > 2) {
+            if(appPath !== "*") {
+                this.delete_routes[appPath] = arguments[2];
+                this.delete_routes[appPath].middleware = handler;
+            } else {
+                this.delete_any.middleware = handler;
+                this.delete_any = arguments[2];
+            }
+            return this;
+        }
         appPath !== "*" ? this.delete_routes[appPath] = handler : this.delete_any = handler;
+        return this;
     }
 
     /**
@@ -518,12 +578,34 @@ class Servejs {
      */
     put(appPath, handler) {
         this.customRouting = true;
+        if(arguments.length > 2) {
+            if(appPath !== "*") {
+                this.put_routes[appPath] = arguments[2];
+                this.put_routes[appPath].middleware = handler;
+            } else {
+                this.put_any.middleware = handler;
+                this.put_any = arguments[2];
+            }
+            return this;
+        }
         appPath !== "*" ? this.put_routes[appPath] = handler : this.put_any = handler;
+        return this;
     }
 
     options(appPath, handler) {
         this.customRouting = true;
+        if(arguments.length > 2) {
+            if(appPath !== "*") {
+                this.options_routes[appPath] = arguments[2];
+                this.options_routes[appPath].middleware = handler;
+            } else {
+                this.options_any.middleware = handler;
+                this.options_any = arguments[2];
+            }
+            return this;
+        }
         appPath !== "*" ? this.option_routes[appPath] = handler : this.option_any = handler;
+        return this;
     }
 
 
