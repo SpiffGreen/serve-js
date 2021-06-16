@@ -47,7 +47,10 @@ const serveJs = require("./serve-js");
 
 serveJs
     .setLogger(true)
-    .get("/", (req, res) => console.dir("This is a Middleware"), (req, res) => res.send(res, {"name": "Spiff"}))
-    .get("/home", (req, res) => res.send(res, "<H2 align='center'>This is the home</H2>"))
+    .use(serveJs.text())
+    .get("/", (req, res) => res.send(res, "<H2 align='center'>Welcome To ServeJS</H2>"))
+    .get("/product/:productId/details", (req, res) => res.send(res, {...req.param}))
+    .get("/:topic", (req, res) => console.log("Middleware: ", req.param), (req, res) => res.send(res, {...req.param, ...req.query}))
     .post("/api", (req, res) => res.send(res, {body: req.body, message: "Recieved"}))
+    .options("/api/:product/:id", (req, res) => res.send(res, {...req.param, method: req.method, body: req.body}))
     .listen();

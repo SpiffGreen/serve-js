@@ -12,7 +12,6 @@
 /**
  * @todo Implement cors method (incomplete)
  * @todo Implement functions that specify data format to be recieved default is string(incomplete) 
- * @todo Implement req.params object for dynamic routes.
  * @todo The send method should be able to detect if its value contains html and send the appropriate headers.
  */
 
@@ -32,11 +31,20 @@ function sanitize(text) {
     return text;
 }
 
+/**
+ * @param {String} text String to test for html
+ * @returns {Boolean}
+ */
 function containsHTML(text) {
     const reg = /<b[^<]*?>|<i[^<]*?>|<div[^<]*?>|<span[^<]*?>|<h[1-6][^<]*?>|<p[^<]*?>|<em[^<]*?>/i;
     return reg.test(text);
 }
 
+/**
+ * 
+ * @param {String} filePath Path to file
+ * @returns {Boolean}
+ */
 function fileExists(filePath) {
     try {
         fs.statSync(filePath);
@@ -46,6 +54,29 @@ function fileExists(filePath) {
     }
 }
 
+/**
+ * @param {String} text Route prototype
+ * @param {Servejs|Object} self 
+ */
+function buildDynamicRoute(text = "", self) {
+    const orig = text;
+    text = text.startsWith("/") ? text.replace("/", "") : text;
+    text = text.endsWith("/") ? text.slice(0, text.length - 1) : text;
+    self.tempReg = "";
+    text.split("/").forEach(i => i.startsWith(":") ? self.tempReg += "\/([^/]+)" : self.tempReg += "\/" + i);
+    self.tempReg = "^" + self.tempReg + "$";
+    // (new RegExp("^/users/([^/]+)/([^/]+)$")).exec("/users/spiff/ddfs"); // Simple test
+    self.dynamicRoutes[self.tempReg] = Object.create(null);
+    self.dynamicRoutes[self.tempReg].params = [];
+    self.dynamicRoutes[self.tempReg].orig = orig;
+    text.split("/").forEach(i => {
+        if(i.startsWith(":")) self.dynamicRoutes[self.tempReg].params.push(i.slice(1, i.length));
+    });
+}
+
+/**
+ * @typedef Servejs
+ */
 class Servejs {
     constructor() {
         // static const version = "v0.0.0";
@@ -56,6 +87,13 @@ class Servejs {
         this.logger = false;
         this.DEFAULT_PORT = 4000;
         this.customRouting = false;
+        this.tempReg = "";
+        this.dynamicRoutes = Object.create(null);
+        this.dynamicRoutes_get = Object.create(null);
+        this.dynamicRoutes_post = Object.create(null);
+        this.dynamicRoutes_put = Object.create(null);
+        this.dynamicRoutes_delete = Object.create(null);
+        this.dynamicRoutes_options = Object.create(null);
         this.get_routes = Object.create(null);
         this.post_routes = Object.create(null);
         this.delete_routes = Object.create(null);
@@ -105,7 +143,6 @@ class Servejs {
             res.setHeader("Content-Type", "application/json");
             // Handling POST data - req.body
             req.on("data", chunk => {
-                console.log(chunk);
                 try {
                     this.buffer = JSON.parse(chunk.toString());
                     req.body = this.buffer;
@@ -146,10 +183,14 @@ class Servejs {
      */
     raw() {
         return (req, res) => {
-            // To be done later, Study how to concatenate chunked node.js(buffer) values
+            req.on("data", chunk => this.buffer = chunk);
         }
     }
 
+    /**
+     * @description Middleware to handle Cross Origin Requests
+     * @returns {Function}
+     */
     cors() {
         return (req, res) => {
             // console.log("Res header", res.setHeader);
@@ -194,6 +235,10 @@ class Servejs {
         }
     };
 
+    /**
+     * @description sends files based on the filePath.
+     * @param {String} filePath Path to file
+     */
     sendFile(req, res, filePath) {
         try {
             const content = fs.readFileSync(filePath, { encoding: "utf-8" });
@@ -241,17 +286,32 @@ class Servejs {
         return Mimes[fileExtension] || 'application/octet-stream'
     }
 
+    /**
+     * @param {Number} port Port number for server to listen on(optional)
+     * @param {Function} cb Callback function(optional)
+     * @returns 
+     */
     listen(port, cb) {
         return http
                 .createServer((req, res) => this.route(req, res))
                 .listen(port || process.env.PORT || this.DEFAULT_PORT, () => cb && cb());
     }
 
+    /**
+     * @description This is different from the setview function in that this is used if customRouting is done, for serving files like css, js, img files, etc.
+     * @param {String} folderPath Path to the folder to serve static files from
+     * @returns {Object}
+     */
     setStatic(folderPath) {
         this.STATIC_FOLDER = folderPath || this.STATIC_FOLDER;
         return this;
     }
 
+    /**
+     * @description This function sets Middlewares to be called upon every request. This functions are called before handlers for a route are called.
+     * @param {Function} cb Callbacks|Middlewares
+     * @returns {Object}
+     */
     use(cb) {
         Array.isArray(this.useCbs)  ? this.useCbs.push(cb) : this.useCbs = Array(cb);
         return this;
@@ -387,6 +447,7 @@ class Servejs {
             
             req.on("end", () => {
                 req.body = this.buffer;
+                req.param = {length: 0};
 
                 switch(req.method) {
                     case "GET":
@@ -398,7 +459,31 @@ class Servejs {
                                 this.get_routes[urlPath].middleware && this.get_routes[urlPath].middleware(req, res);
                                 this.get_routes[urlPath](req, res)
                              } else {
-                                 fileExists(path.join(__dirname, this.STATIC_FOLDER, urlPath)) ?  this.sendFile(req, res, path.join(__dirname, this.STATIC_FOLDER, urlPath)) : this.send404(req, res);
+                                 let reg_get = "";
+                                 for(let x in this.dynamicRoutes) {
+                                    var match = (new RegExp(x)).exec(urlPath);
+                                    if(match) {
+                                        for(let count = 1; count < match.length; count++) {
+                                            req.param[this.dynamicRoutes[x].params[count - 1]] = match[count];
+                                            req.param.length += 1;
+                                        }
+                                        reg_get = this.dynamicRoutes[x].orig;
+                                    }
+                                 }
+                                 if(req.param.length === 0) {
+                                     fileExists(path.join(__dirname, this.STATIC_FOLDER, urlPath)) ?  this.sendFile(req, res, path.join(__dirname, this.STATIC_FOLDER, urlPath)) : this.send404(req, res);
+                                 } else {
+                                     // execute dynamic route handler
+                                     delete req.param.length;
+                                    if(this.dynamicRoutes_get[reg_get]) {
+                                        if(this.dynamicRoutes_get[reg_get].middleware) {
+                                            this.dynamicRoutes_get[reg_get].middleware(req, res);
+                                        }
+                                        this.dynamicRoutes_get[reg_get](req, res);
+                                     } else {
+                                         this.send404(req, res);
+                                     }
+                                 }
                              }
                         }
                         break;
@@ -412,18 +497,147 @@ class Servejs {
                                 this.post_routes[urlPath].middleware && this.post_routes[urlPath].middleware(req, res);
                                 this.post_routes[urlPath](req, res)
                              } else {
-                                 this.send404(req, res);
+                                 let reg_get = "";
+                                 for(let x in this.dynamicRoutes) {
+                                    var match = (new RegExp(x)).exec(urlPath);
+                                    if(match) {
+                                        for(let count = 1; count < match.length; count++) {
+                                            req.param[this.dynamicRoutes[x].params[count - 1]] = match[count];
+                                            req.param.length += 1;
+                                        }
+                                        reg_get = this.dynamicRoutes[x].orig;
+                                    }
+                                 }
+                                 if(req.param.length === 0) {
+                                    this.send404(req, res);
+                                 } else {
+                                     // execute dynamic route handler
+                                     delete req.param.length;
+                                    if(this.dynamicRoutes_post[reg_get]) {
+                                        if(this.dynamicRoutes_post[reg_get].middleware) {
+                                            this.dynamicRoutes_post[reg_get].middleware(req, res);
+                                        }
+                                        this.dynamicRoutes_post[reg_get](req, res);
+                                     } else {
+                                         this.send404(req, res);
+                                     }
+                                 }
                              }
                         }
                         break;
                     case "DELETE":
-                        this.delete_any ? this.delete_any(req, res) : this.delete_routes[urlPath] ? this.delete_routes[urlPath](req, res) : this.send404(req, res);
+                        // this.delete_any ? this.delete_any(req, res) : this.delete_routes[urlPath] ? this.delete_routes[urlPath](req, res) : this.send404(req, res);
+                        if(this.delete_any) {
+                            this.delete_any.middleware && this.delete_any.middleware(req, res);
+                            this.delete_any(req, res);
+                        } else {
+                            if(this.delete_routes[urlPath]) {
+                                this.delete_routes[urlPath].middleware && this.delete_routes[urlPath].middleware(req, res);
+                                this.delete_routes[urlPath](req, res)
+                             } else {
+                                 let reg_get = "";
+                                 for(let x in this.dynamicRoutes) {
+                                    var match = (new RegExp(x)).exec(urlPath);
+                                    if(match) {
+                                        for(let count = 1; count < match.length; count++) {
+                                            req.param[this.dynamicRoutes[x].params[count - 1]] = match[count];
+                                            req.param.length += 1;
+                                        }
+                                        reg_get = this.dynamicRoutes[x].orig;
+                                    }
+                                 }
+                                 if(req.param.length === 0) {
+                                    this.send404(req, res);
+                                 } else {
+                                     // execute dynamic route handler
+                                     delete req.param.length;
+                                    if(this.dynamicRoutes_delete[reg_get]) {
+                                        if(this.dynamicRoutes_delete[reg_get].middleware) {
+                                            this.dynamicRoutes_delete[reg_get].middleware(req, res);
+                                        }
+                                        this.dynamicRoutes_delete[reg_get](req, res);
+                                     } else {
+                                         this.send404(req, res);
+                                     }
+                                 }
+                             }
+                        }
                         break;
                     case "PUT":
-                        this.put_any ? this.put_any(req, res) : this.put_routes[urlPath] ? this.put_routes[urlPath](req, res) : this.send404(req, res);
+                        // this.put_any ? this.put_any(req, res) : this.put_routes[urlPath] ? this.put_routes[urlPath](req, res) : this.send404(req, res);
+                        if(this.put_any) {
+                            this.put_any.middleware && this.put_any.middleware(req, res);
+                            this.put_any(req, res);
+                        } else {
+                            if(this.put_routes[urlPath]) {
+                                this.put_routes[urlPath].middleware && this.put_routes[urlPath].middleware(req, res);
+                                this.put_routes[urlPath](req, res)
+                             } else {
+                                 let reg_get = "";
+                                 for(let x in this.dynamicRoutes) {
+                                    var match = (new RegExp(x)).exec(urlPath);
+                                    if(match) {
+                                        for(let count = 1; count < match.length; count++) {
+                                            req.param[this.dynamicRoutes[x].params[count - 1]] = match[count];
+                                            req.param.length += 1;
+                                        }
+                                        reg_get = this.dynamicRoutes[x].orig;
+                                    }
+                                 }
+                                 if(req.param.length === 0) {
+                                    this.send404(req, res);
+                                 } else {
+                                     // execute dynamic route handler
+                                     delete req.param.length;
+                                    if(this.dynamicRoutes_put[reg_get]) {
+                                        if(this.dynamicRoutes_put[reg_get].middleware) {
+                                            this.dynamicRoutes_put[reg_get].middleware(req, res);
+                                        }
+                                        this.dynamicRoutes_put[reg_get](req, res);
+                                     } else {
+                                         this.send404(req, res);
+                                     }
+                                 }
+                             }
+                        }
                         break;
                     case "OPTIONS":
-                        this.options_any ? this.options_any(req, res) : this.options_routes[urlPath] ? this.options_routes[urlPath](req, res) : this.send404(req, res);
+                        // this.options_any ? this.options_any(req, res) : this.options_routes[urlPath] ? this.options_routes[urlPath](req, res) : this.send404(req, res);
+                        if(this.options_any) {
+                            this.options_any.middleware && this.options_any.middleware(req, res);
+                            this.options_any(req, res);
+                        } else {
+                            if(this.options_routes[urlPath]) {
+                                this.options_routes[urlPath].middleware && this.options_routes[urlPath].middleware(req, res);
+                                this.options_routes[urlPath](req, res)
+                             } else {
+                                 let reg_get = "";
+                                 for(let x in this.dynamicRoutes) {
+                                    var match = (new RegExp(x)).exec(urlPath);
+                                    if(match) {
+                                        for(let count = 1; count < match.length; count++) {
+                                            req.param[this.dynamicRoutes[x].params[count - 1]] = match[count];
+                                            req.param.length += 1;
+                                        }
+                                        reg_get = this.dynamicRoutes[x].orig;
+                                    }
+                                 }
+                                 if(req.param.length === 0) {
+                                    this.send404(req, res);
+                                 } else {
+                                     // execute dynamic route handler
+                                     delete req.param.length;
+                                    if(this.dynamicRoutes_options[reg_get]) {
+                                        if(this.dynamicRoutes_options[reg_get].middleware) {
+                                            this.dynamicRoutes_options[reg_get].middleware(req, res);
+                                        }
+                                        this.dynamicRoutes_options[reg_get](req, res);
+                                     } else {
+                                         this.send404(req, res);
+                                     }
+                                 }
+                             }
+                        }
                         break;
                     default:
                         res.end("UNKNOWN METHOD");
@@ -433,6 +647,10 @@ class Servejs {
         }
     }
 
+    /**
+     * @description This method is used for sending data to clients. Capable of sending html from string and json.
+     * @param {Object|Array|String|Number} respObject Data to send to client
+     */
     send(res, respObject) {
         const type = typeof respObject;
         if(type === "object" || Array.isArray(respObject)) {
@@ -515,6 +733,16 @@ class Servejs {
      */
     get(appPath, handler) {
         this.customRouting = true;
+        if(appPath.includes(":")) {
+            buildDynamicRoute(appPath, this);
+            this.dynamicRoutes_get[appPath] = handler;
+            if(arguments.length > 2) {
+                this.dynamicRoutes_get[appPath] = arguments[2];
+                this.dynamicRoutes_get[appPath].middleware = handler;
+                return this;
+            }
+            return this;
+        }
         if(arguments.length > 2) {
             if(appPath !== "*") {
                 this.get_routes[appPath] = arguments[2];
@@ -536,6 +764,16 @@ class Servejs {
      */
     post(appPath, handler) {
         this.customRouting = true;
+        if(appPath.includes(":")) {
+            buildDynamicRoute(appPath, this);
+            this.dynamicRoutes_post[appPath] = handler;
+            if(arguments.length > 2) {
+                this.dynamicRoutes_post[appPath] = arguments[2];
+                this.dynamicRoutes_post[appPath].middleware = handler;
+                return this;
+            }
+            return this;
+        }
         if(arguments.length > 2) {
             if(appPath !== "*") {
                 this.post_routes[appPath] = arguments[2];
@@ -557,6 +795,16 @@ class Servejs {
      */
     delete(appPath, handler) {
         this.customRouting = true;
+        if(appPath.includes(":")) {
+            buildDynamicRoute(appPath, this);
+            this.dynamicRoutes_delete[appPath] = handler;
+            if(arguments.length > 2) {
+                this.dynamicRoutes_delete[appPath] = arguments[2];
+                this.dynamicRoutes_delete[appPath].middleware = handler;
+                return this;
+            }
+            return this;
+        }
         if(arguments.length > 2) {
             if(appPath !== "*") {
                 this.delete_routes[appPath] = arguments[2];
@@ -578,6 +826,16 @@ class Servejs {
      */
     put(appPath, handler) {
         this.customRouting = true;
+        if(appPath.includes(":")) {
+            buildDynamicRoute(appPath, this);
+            this.dynamicRoutes_put[appPath] = handler;
+            if(arguments.length > 2) {
+                this.dynamicRoutes_put[appPath] = arguments[2];
+                this.dynamicRoutes_put[appPath].middleware = handler;
+                return this;
+            }
+            return this;
+        }
         if(arguments.length > 2) {
             if(appPath !== "*") {
                 this.put_routes[appPath] = arguments[2];
@@ -592,8 +850,23 @@ class Servejs {
         return this;
     }
 
+    /**
+     * @description Handles all 'OPTIONS' requests for appPath using handler
+     * @param {String} appPath Expected Endpoint
+     * @param {Function} handler Callback for allowing user handle the req and res
+     */
     options(appPath, handler) {
         this.customRouting = true;
+        if(appPath.includes(":")) {
+            buildDynamicRoute(appPath, this);
+            this.dynamicRoutes_options[appPath] = handler;
+            if(arguments.length > 2) {
+                this.dynamicRoutes_options[appPath] = arguments[2];
+                this.dynamicRoutes_options[appPath].middleware = handler;
+                return this;
+            }
+            return this;
+        }
         if(arguments.length > 2) {
             if(appPath !== "*") {
                 this.options_routes[appPath] = arguments[2];
