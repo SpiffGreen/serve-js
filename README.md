@@ -12,7 +12,7 @@
 
 </div>
 
-Serve-JS was inspired By [@midnqp's Frameworkless](https://github.com/midnqp/frameworkless)
+Serve-JS is an implementation of [midnqp/frameworkless](https://github.com/midnqp/frameworkless) specification.
 * __Its easy to write__: Any who knows simple html and css is good to go, except for writing the server side logic if required means one should have knowledge of nodejs.
 * __Node in HTML__: Allows you write nodejs code inside html
 * __Routing__: It intelligently performs the routing for you. So no need to worry about url paths, except you need to customize the endpoints. As a plus, you don't have to include .html at the end of URLs requesting HTML files.
@@ -102,5 +102,9 @@ Please read the [Contributing.md](./CONTRIBUTING.md) file for guidelines to cont
 
 ## License
 Serve-JS is [MIT licensed](./LICENSE)
+
+Copyright 2021 Spiff Jekey-Green <spiffjekeygreen@gmail.com>
+
+Copyright 2021 Muhammad Bin Zafar <midnightquantumprogrammer@gmail.com>
 
 <p align="center">Made with in Nigeria</p>
